@@ -86,9 +86,14 @@ Quality/polish pass. Full detail in `ROADMAP.md`; user prerequisites in
   minimize cost). A pure `captions.py` emits an engine-agnostic timeline JSON;
   **Remotion is a documented fallback** if fidelity disappoints (same JSON, swap
   only the render stage). ASS stays as a light `CAPTION_ENGINE=ass` fallback.
-- **Video:** Ken Burns + gradient overlay + h264 `crf ~18` (vs `veryfast`/23);
-  optional `MUSIC_FOLDER_PATH` with sidechain ducking.
+- **Video:** Ken Burns + gradient overlay + h264 `crf ~18` (vs `veryfast`/23).
+- **Music + asset selection:** `MUSIC_FOLDER_PATH` `.mp3` pool (mirrors
+  `BG_VIDEO_FOLDER_PATH`, mounted read-only). Users **select** a background video
+  and a music track (or "no music") in the UI — replaces pure-random. New
+  `GET /api/assets/{backgrounds,music}` list endpoints; selections are
+  **whitelisted** against the pools (no path traversal); chosen names persist on
+  the `projects` row. Music is ducked under narration (`sidechaincompress`).
 - **Rendering becomes async** (background job + status polling) since v2 renders
   exceed a safe request timeout.
 
-Open decision before coding: whether to include background music in v2.
+Direction fully settled — no open decisions; ready to draft a build plan.

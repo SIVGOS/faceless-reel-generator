@@ -36,14 +36,17 @@ This is **optional** and only if Gemini TTS still mispronounces a specific word:
   minimize cost. Remotion kept as a documented fallback if MoviePy's fidelity
   isn't good enough — revisit only then.
 
-## Background music — one small decision
-- Decide **yes/no on background music** for v2 (adds a music pool + ducking).
+## Background music — DECIDED
+- Yes. A `MUSIC_FOLDER_PATH` folder of `.mp3` clips, mirroring the background
+  video folder. Users pick a video **and** a music track (or "no music") in the
+  web app. Music is ducked under the narration.
 
 ## Assets (improves output quality directly)
 - Add a few **high-resolution 1080×1920 .mp4** clips to your
   `BG_VIDEO_FOLDER_PATH` library (quality in = quality out).
-- Optional: a small folder of **background music** tracks if you want music with
-  ducking in v2.
+- Add a folder of **`.mp3` music** clips and point `MUSIC_FOLDER_PATH` at it.
+  Use royalty-free / licensed tracks — for a public/commercial product, make sure
+  you have rights to any music you ship or distribute in rendered reels.
 
 ## Nothing else is required right now
 We'll handle all code, Docker, and config changes in the build sessions.

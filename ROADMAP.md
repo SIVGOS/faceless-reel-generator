@@ -33,13 +33,14 @@ This captures the agreed direction so any session can pick it up.
 
 ## Target render flow
 ```
-prompt
+prompt  + user-selected background video  + user-selected music (or none)
   └─▶ Gemini script  (+ optional emphasis keywords)
         └─▶ Gemini TTS (director-style prompt) ─▶ 24kHz PCM ─▶ wav/mp3 + loudnorm
               └─▶ faster-whisper ─▶ word timestamps
                     └─▶ caption timeline JSON  (word groups + timings + emphasis)
-                          └─▶ render engine (bg + Ken Burns + gradient overlay
-                              + animated word-pop captions + audio) ─▶ reel.mp4
+                          └─▶ render engine (chosen bg + Ken Burns + gradient
+                              overlay + animated word-pop captions + narration
+                              mixed over ducked music) ─▶ reel.mp4
 ```
 
 ## Work breakdown
@@ -81,9 +82,30 @@ prompt
 ### 4. Video polish — fixes #4
 - Ken Burns zoom/pan on background; gradient/vignette overlay behind captions.
 - Encode h264 high profile at `crf ~18` (vs current `veryfast`/`crf 23`).
-- Optional `MUSIC_FOLDER_PATH` (mirrors `BG_VIDEO_FOLDER_PATH`) with sidechain
-  ducking under narration.
 - Provide higher-res 1080×1920 source clips (quality in = quality out).
+
+### 5. Background music + user asset selection  *(confirmed feature)*
+- **Music library:** `MUSIC_FOLDER_PATH` env, a folder of `.mp3` clips mirroring
+  `BG_VIDEO_FOLDER_PATH` exactly — kept outside the repo, mounted **read-only**
+  into the container at a fixed path, refreshable without a rebuild.
+- **Audio mix:** narration is the foreground; selected music is **ducked under
+  it** (ffmpeg `sidechaincompress`), looped/trimmed to the reel length, with
+  fade in/out, then `loudnorm` on the final mix. **"No music"** is a first-class
+  option (skip the music input → narration only).
+- **User selection in the web app (NEW — replaces pure-random):**
+  - `GET /api/assets/backgrounds` and `GET /api/assets/music` list the available
+    files in each pool (filenames + maybe a thumbnail/preview later).
+  - The compile request accepts an optional chosen `background` and `music`
+    (filename) plus an explicit `music: none`. If background is omitted, fall
+    back to today's **random** pick; music defaults to none unless chosen.
+  - **Security (public, multi-tenant app):** treat selections as a **whitelist**
+    — resolve only against the listed pool by exact basename, reject anything
+    that escapes the folder (no path traversal), before it ever reaches the
+    ffmpeg argv. Mirrors the existing `pick_background` safety.
+  - Frontend: add **background** and **music** pickers (dropdown/grid, with a
+    "No music" choice) to the workspace controls; optional inline preview.
+  - Persist the chosen `background`/`music` on the `projects` row for reproducible
+    re-renders and gallery display.
 
 ## Planned config (env)
 | Var | Purpose |
@@ -94,11 +116,20 @@ prompt
 | `TTS_STYLE_PROMPT` | director-style narration instruction |
 | `CAPTION_ENGINE` | default `moviepy`; `ass` (light fallback), `remotion` (future) |
 | `RENDER_TIMEOUT_SECONDS` | cap for the render subprocess |
-| `MUSIC_FOLDER_PATH` | optional background-music pool |
+| `MUSIC_FOLDER_PATH` | background-music `.mp3` pool (mirrors `BG_VIDEO_FOLDER_PATH`) |
+
+## Schema / API additions
+- `projects`: add `background` and `music` columns (chosen basenames; `music`
+  nullable = no music) for reproducible re-renders + gallery display.
+- New: `GET /api/assets/backgrounds`, `GET /api/assets/music` (list pools).
+- Compile/generate request gains optional `background` + `music` selections
+  (whitelisted against the pools).
 
 ## Docker impact
 - MoviePy: add the Python package + its ffmpeg/PIL needs — modest. No Node,
   no Chromium.
+- Mount `MUSIC_FOLDER_PATH` read-only (mirrors the backgrounds mount), defaulting
+  to `./music` when unset.
 - Bundle display fonts (Montserrat ExtraBold / Anton) for captions.
 - (Only if we ever switch to Remotion: +Node +headless Chromium, ~300–500 MB,
   `libnss3`/font deps + `--no-sandbox`.)
@@ -113,8 +144,8 @@ prompt
   License check (free only for individuals / for-profits ≤3 people) and a heavier
   image. Same timeline JSON, so the swap is contained.
 
-## Open decisions (need user input before coding)
-1. Background music: yes/no for v2.
+## Open decisions
+None — direction is fully settled. Ready to draft a step-by-step build plan.
 
 ## User action items
 See `ACTION_ITEMS.md`.
