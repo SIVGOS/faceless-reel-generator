@@ -18,12 +18,14 @@ captions + narration + random ./backgrounds/*.mp4 ──▶ ffmpeg ──▶ ree
 
 ## Quick start (Docker)
 
-1. Add at least one vertical `.mp4` to `./backgrounds/` (mounted as a volume, so
-   you can refresh the pool without rebuilding the image).
+1. Point `BG_VIDEO_FOLDER_PATH` at a folder of vertical `.mp4` loops. This lives
+   **outside the repo** so large media is never pushed to git; it's mounted into
+   the container (read-only) so you can refresh the pool without rebuilding.
+   Leave it unset to use the local `./backgrounds/` fallback.
 2. Copy env and set your key:
    ```bash
    cp .env.example .env
-   # set GEMINI_API_KEY and a random JWT_SECRET
+   # set GEMINI_API_KEY, a random JWT_SECRET, and BG_VIDEO_FOLDER_PATH
    python -c "import secrets; print(secrets.token_urlsafe(48))"
    ```
 3. Build and run:

@@ -16,9 +16,13 @@ services:
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-10080}
       TTS_VOICE: ${TTS_VOICE:-en-US-ChristopherNeural}
       WHISPER_MODEL: ${WHISPER_MODEL:-base}
+      # Fixed in-container mount point; the host folder is wired via the volume.
+      BG_VIDEO_FOLDER_PATH: /media/backgrounds
     volumes:
-      # Refresh the background pool externally without rebuilding the image.
-      - ./backgrounds:/app/backgrounds
+      # Mount the external video library (host BG_VIDEO_FOLDER_PATH) read-only.
+      # Refresh the pool externally without rebuilding the image, and never
+      # commit large media to git. Defaults to ./backgrounds if unset.
+      - ${BG_VIDEO_FOLDER_PATH:-./backgrounds}:/media/backgrounds:ro
       # Persist sqlite DB + rendered reels across restarts.
       - ./data:/app/data
       # Cache the downloaded whisper model between runs.

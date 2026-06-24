@@ -33,7 +33,8 @@ app/
     subtitles.py     PURE python .ass karaoke builder (no heavy deps)
     compose.py       ffmpeg subprocess assembly
   static/            index.html, style.css, app.js
-backgrounds/         mounted volume of source .mp4 loops (not baked in image)
+backgrounds/         local fallback pool (BG_VIDEO_FOLDER_PATH overrides; media
+                     lives outside the repo, mounted read-only in Docker)
 data/                sqlite db + generated audio/video (gitignored)
 tests/               offline sanity tests (subtitles, ffmpeg arg builder)
 ```
@@ -62,9 +63,12 @@ tests/               offline sanity tests (subtitles, ffmpeg arg builder)
 
 ## Env (.env, see .env.example)
 - `GEMINI_API_KEY` — Google AI Studio key.
+- `GEMINI_GENERATION_MODEL` / `GEMINI_EMBEDDING_MODEL` — Gemini model ids.
 - `JWT_SECRET` — random secret for signing session tokens.
 - `TTS_VOICE` — default `en-US-ChristopherNeural`.
 - `WHISPER_MODEL` — default `base`.
+- `BG_VIDEO_FOLDER_PATH` — path to the external `.mp4` background library
+  (maps to `settings.backgrounds_dir`; defaults to `./backgrounds`).
 
 ## Git
 Work proceeds in checkpoints: scaffold → schema → pipeline → auth → frontend →

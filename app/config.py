@@ -4,6 +4,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Repo root = parent of the `app` package.
@@ -34,7 +35,13 @@ class Settings(BaseSettings):
 
     # Paths
     data_dir: Path = BASE_DIR / "data"
-    backgrounds_dir: Path = BASE_DIR / "backgrounds"
+    # Background video library lives OUTSIDE the repo so large media files are
+    # never committed. Point BG_VIDEO_FOLDER_PATH at any local/mounted folder of
+    # .mp4 loops; falls back to ./backgrounds for local convenience.
+    backgrounds_dir: Path = Field(
+        default=BASE_DIR / "backgrounds",
+        validation_alias="BG_VIDEO_FOLDER_PATH",
+    )
 
     @property
     def db_path(self) -> Path:
@@ -56,10 +63,12 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     s = Settings()
-    # Ensure runtime directories exist.
+    # Ensure runtime directories the app OWNS exist. The background library
+    # (backgrounds_dir / BG_VIDEO_FOLDER_PATH) is external, possibly read-only
+    # input — never auto-create it; pick_background() surfaces a clear error if
+    # it is missing or empty.
     s.data_dir.mkdir(parents=True, exist_ok=True)
     s.projects_dir.mkdir(parents=True, exist_ok=True)
-    s.backgrounds_dir.mkdir(parents=True, exist_ok=True)
     return s
 
 
