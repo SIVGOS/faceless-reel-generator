@@ -23,6 +23,21 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Faceless Reel Generator", lifespan=lifespan)
 
+
+@app.middleware("http")
+async def no_cache_app_shell(request, call_next):
+    """Force revalidation of the SPA shell so a redeploy can't serve stale HTML/JS.
+
+    Scoped to `/` and `/static/*` only — API responses and video range requests
+    keep their normal caching.
+    """
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
+
 app.include_router(auth.router)
 app.include_router(projects.router)
 
