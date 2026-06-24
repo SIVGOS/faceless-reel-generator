@@ -116,14 +116,16 @@ See `ACTION_ITEMS.md`.
 ---
 
 ### Verified facts (as of 2026-06-24)
-- Gemini TTS uses the standard `google-genai` SDK + AI Studio API key — **no new
+- **The project's `GEMINI_API_KEY` is already on the paid tier** (free quota used
+  up). So all Gemini TTS models are available — including the paid-only
+  `gemini-2.5-pro-preview-tts` — with no extra setup, and no separate key needed.
+- Gemini TTS uses the standard `google-genai` SDK + the same API key — **no new
   API to enable, no service account.**
-- `gemini-3.1-flash-tts-preview`: **free tier available**; paid ≈ **$20 / 1M audio
-  output tokens**.
-- `gemini-2.5-flash-preview-tts`: free tier available; paid ≈ $10 / 1M.
-- `gemini-2.5-pro-preview-tts`: **no free tier** — requires billing.
-- Enabling billing on a Gemini project removes the free tier for that project
-  (every call becomes billable). Rate limits are per Google Cloud project.
+- Pricing (paid): `gemini-3.1-flash-tts-preview` ≈ **$20 / 1M audio output
+  tokens**; `gemini-2.5-flash-preview-tts` ≈ $10 / 1M; `gemini-2.5-pro-preview-tts`
+  ≈ $20 / 1M. Default = 3.1-flash-tts (newest, best control); 2.5-pro is a quality
+  A/B option now that billing is on.
+- Rate limits are per Google Cloud project.
 
 Sources:
 - https://ai.google.dev/gemini-api/docs/speech-generation
