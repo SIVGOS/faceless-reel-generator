@@ -107,6 +107,38 @@ prompt  + user-selected background video  + user-selected music (or none)
   - Persist the chosen `background`/`music` on the `projects` row for reproducible
     re-renders and gallery display.
 
+### 6. Admin user management  *(operational — multi-tenant control)*
+- **Admin role:** add an `is_admin` flag on `users` (default `false`); seed/promote
+  the first admin via env or a one-off script. Gate all admin endpoints on the JWT
+  user's `is_admin` — server-side, never trust the client.
+- **Admin API** (new `app/routers/admin.py`, all behind an `is_admin` dependency):
+  - `GET /api/admin/users` — list users (id, email, created, `is_admin`,
+    project count). No password hashes ever leave the server.
+  - `POST /api/admin/users` — **create** a user (email + initial password,
+    optional `is_admin`).
+  - `PATCH /api/admin/users/{id}` — **edit** (email, `is_admin`).
+  - `POST /api/admin/users/{id}/reset-password` — **reset password** (admin sets a
+    new one; re-hash via the existing `passlib` path).
+  - `DELETE /api/admin/users/{id}` — **delete** a user and cascade their projects.
+- **Guardrails:** an admin cannot delete or de-admin themselves into a state with
+  **zero admins** left; reuse the existing bcrypt hashing + email-uniqueness rules;
+  audit-log admin mutations.
+- **Frontend:** a separate **Admin page** (visible only when `is_admin`) — user
+  table with create / edit / reset-password / delete actions.
+
+### 7. Responsive, mobile-first UI  *(target audience is on phones)*
+- **Assumption:** most users open this in a **mobile browser** (we target Instagram
+  creators), so the single-page UI must be **mobile-first**, scaling up to desktop —
+  not the reverse.
+- Fluid layout with CSS flex/grid + a few `max-width` breakpoints; controls,
+  pickers (background/music grids from #5), and the project gallery reflow to a
+  single column on narrow screens.
+- **Touch ergonomics:** tap targets ≥44 px, no hover-only affordances, inputs use
+  correct mobile keyboard types, the 9:16 preview fits the viewport without
+  horizontal scroll.
+- Add the `<meta name="viewport">` tag; test at ~375 px width up through desktop.
+- The new **Admin page** (#6) is responsive too.
+
 ## Planned config (env)
 | Var | Purpose |
 |---|---|
@@ -117,11 +149,16 @@ prompt  + user-selected background video  + user-selected music (or none)
 | `CAPTION_ENGINE` | default `moviepy`; `ass` (light fallback), `remotion` (future) |
 | `RENDER_TIMEOUT_SECONDS` | cap for the render subprocess |
 | `MUSIC_FOLDER_PATH` | background-music `.mp3` pool (mirrors `BG_VIDEO_FOLDER_PATH`) |
+| `ADMIN_EMAIL` | email auto-promoted to admin on startup (bootstrap first admin) |
+| `EMAIL_*` | transactional email provider creds (Mailjet/SendGrid; SMTP or API) + verified sender — only for self-service password reset (later) |
 
 ## Schema / API additions
 - `projects`: add `background` and `music` columns (chosen basenames; `music`
   nullable = no music) for reproducible re-renders + gallery display.
+- `users`: add `is_admin` boolean column (default `false`).
 - New: `GET /api/assets/backgrounds`, `GET /api/assets/music` (list pools).
+- New (admin-only): `GET/POST /api/admin/users`, `PATCH /api/admin/users/{id}`,
+  `POST /api/admin/users/{id}/reset-password`, `DELETE /api/admin/users/{id}`.
 - Compile/generate request gains optional `background` + `music` selections
   (whitelisted against the pools).
 
@@ -168,3 +205,97 @@ Sources:
 - https://ai.google.dev/gemini-api/docs/speech-generation
 - https://ai.google.dev/gemini-api/docs/pricing
 - https://docs.cloud.google.com/text-to-speech/docs/gemini-tts
+
+---
+
+## 🔴 Pre-deployment hardening — disable public signup (HIGH PRIORITY)
+**This app costs real money per render (Gemini + TTS). Public self-signup must be
+closed before deployment — only an admin creates accounts.** This is a hard
+release gate, not a polish item.
+
+- **Current state (open door):** `POST /api/auth/register` (`app/routers/auth.py`)
+  lets *anyone* create an account and immediately get a session cookie. That must
+  not ship as-is.
+- **Required change:** registration is **admin-only**. Account creation moves to
+  the admin user-management flow (§6 `POST /api/admin/users`). Options for the
+  public endpoint, in order of preference:
+  1. **Remove** `POST /api/auth/register` entirely (cleanest — there is no
+     self-serve path). Keep `login` / `logout` / `me`.
+  2. Or keep it but **gate it behind `is_admin`** (reuses the §6 admin dependency).
+- **Frontend:** drop the "Sign up" UI from the single-page app; show **login
+  only**. New users are told to ask an admin for an account.
+- **Bootstrap:** the first admin is seeded via `ADMIN_EMAIL` (see §6 / config) so
+  there is a way in once signup is closed — verify this works before removing
+  `register`, or you can lock yourself out.
+- **Tenancy reminder:** closing signup limits *who* can spend money; per-user cost
+  controls (render quotas / rate limits) remain a separate, later concern.
+
+### Identifier: email for everyone (decided)
+**All users — admins included — authenticate with email + password.** The current
+`users` model / `UserCreate` schema key on **`username`**; migrate the auth layer
+to **email** as part of this gate:
+- Rename/replace the `username` column with `email` (unique, lowercased, format-
+  validated); update `UserCreate`/`UserOut` schemas, `login`, and the admin
+  create/edit flows (§6) to match. SQLite needs an `ALTER TABLE` / rebuild for the
+  rename — fold into the v2 migration step.
+- Email is the natural account key and **enables the password-reset flow below**.
+
+### Password reset flow (enabled by email)
+- **Admin-initiated (ships first, already in §6):** `POST /api/admin/users/{id}/
+  reset-password` lets an admin set a new password. Sufficient for launch.
+- **Self-service (later, optional):** "forgot password" → email a signed,
+  short-lived reset token → user sets a new password. Requires a **transactional
+  email provider — likely Mailjet or SendGrid** (SMTP/API) — a new dependency +
+  `EMAIL_*` config and a provider account/API key, so it's a follow-on, not a
+  launch blocker. Tokens single-use + expiring; never reveal whether an email
+  exists (anti-enumeration). **User prerequisite:** sign up for the provider and
+  supply an API key + a verified sender domain/address — see `ACTION_ITEMS.md`.
+
+---
+
+## Backup & restore (pre-deployment, not urgent)
+The SQLite DB (`data/app.db`) is the only stateful, irreplaceable asset (rendered
+reels under `data/projects/` are regenerable). We want an off-box backup before
+going live, but it doesn't block current build work.
+
+### Plan: periodic SQLite snapshot → S3
+- **Cadence:** host cron pushes a snapshot to S3 every few hours.
+- **Consistency (important):** do **not** `cp`/`aws s3 cp` the live `app.db` — a
+  copy taken mid-write can be torn/inconsistent. Use SQLite's online backup to get
+  a clean single-file snapshot:
+  ```bash
+  # Run inside the container — already root, file always reachable, consistent.
+  docker compose exec -T app \
+    sqlite3 /app/data/app.db ".backup '/app/data/backup.db'"
+  # backup.db lands in host ./data via the bind mount → push to S3.
+  aws s3 cp ./data/backup.db s3://<bucket>/reel-forge/app-$(date +%F-%H%M).db
+  ```
+  (`VACUUM INTO` is an alternative that also compacts.)
+- **Retention:** keep N hourly + a few daily; lifecycle-expire the rest on the
+  bucket. Versioned bucket + SSE recommended.
+
+### Permissions caveat (root-owned bind mount)
+- The container runs as **root** (no `USER` in the Dockerfile) and `./data` is a
+  bind mount, so `data/app.db` on the host is **root-owned**, mode `0644`.
+- **Backup (read):** fine — file is world-readable; taking the snapshot *inside the
+  container* sidesteps host ownership entirely (preferred).
+- **Restore (write):** must run **as root / sudo** — a non-root user can't replace
+  the root-owned file or create sidecar files in the root-owned dir.
+- *Optional fix:* set `user: "<uid>:<gid>"` in `docker-compose.yml` so `data/` is
+  owned by the host user and both directions work without sudo (the host `./data`
+  must be pre-owned by that uid before first run).
+
+### Restore runbook (safe order)
+SQLite holds `app.db` open while the app runs — never swap it underneath a live
+container:
+1. `docker compose down` (stop the app).
+2. As **root**, place the restored file at `./data/app.db` and remove any stale
+   `-journal` / `-wal` / `-shm` sidecars.
+3. `docker compose up -d` — startup re-opens the file cleanly (`init_db()` is a
+   no-op on an existing, populated DB).
+
+### Pre-deployment checklist
+- [ ] Backup cron installed (root crontab) + S3 bucket (versioning + SSE + lifecycle).
+- [ ] One real restore drill on a throwaway host (prove the runbook end-to-end).
+- [ ] Decide DB-write durability later if we move off SQLite (e.g. Litestream for
+      continuous replication, or Postgres) — out of scope for v2.

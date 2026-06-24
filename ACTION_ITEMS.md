@@ -48,5 +48,15 @@ This is **optional** and only if Gemini TTS still mispronounces a specific word:
   Use royalty-free / licensed tracks — for a public/commercial product, make sure
   you have rights to any music you ship or distribute in rendered reels.
 
+## Transactional email — LATER (only for self-service password reset)
+- **Not needed for launch.** Admin-initiated password reset (admin sets a new
+  password) ships first and needs no email service.
+- When we build the self-service "forgot password" flow, you'll need a
+  **transactional email provider — Mailjet or SendGrid** (either works):
+  - Create an account and generate an **API key** (or SMTP credentials).
+  - **Verify a sender domain/address** (SPF/DKIM) so reset emails aren't spam-
+    filtered.
+  - Hand over the key + sender; we'll wire it via `EMAIL_*` env (no code from you).
+
 ## Nothing else is required right now
 We'll handle all code, Docker, and config changes in the build sessions.
