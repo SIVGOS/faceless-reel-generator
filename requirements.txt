@@ -20,7 +20,8 @@ pydantic-settings==2.7.1
 google-genai==0.3.0
 
 # Media pipeline
-edge-tts==7.0.0
+# edge-tts must track Microsoft's rotating Sec-MS-GEC token; older pins 403.
+edge-tts==7.2.8
 faster-whisper==1.1.0
 
 # Tests

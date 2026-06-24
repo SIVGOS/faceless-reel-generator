@@ -1,0 +1,13 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+data
+backgrounds/*
+!backgrounds/.gitkeep
+.env
+.DS_Store
+README.md
+tests

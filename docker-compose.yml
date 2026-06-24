@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: faceless-reel-generator
+    container_name: reel-forge
+    ports:
+      - "8000:8000"
+    environment:
+      # Pulled from a local .env (see .env.example). Compose substitutes these.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-insecure-dev-secret-change-me}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-10080}
+      TTS_VOICE: ${TTS_VOICE:-en-US-ChristopherNeural}
+      WHISPER_MODEL: ${WHISPER_MODEL:-base}
+    volumes:
+      # Refresh the background pool externally without rebuilding the image.
+      - ./backgrounds:/app/backgrounds
+      # Persist sqlite DB + rendered reels across restarts.
+      - ./data:/app/data
+      # Cache the downloaded whisper model between runs.
+      - whisper-cache:/root/.cache
+    restart: unless-stopped
+
+volumes:
+  whisper-cache:
