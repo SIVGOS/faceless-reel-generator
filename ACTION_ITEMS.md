@@ -31,13 +31,13 @@ This is **optional** and only if Gemini TTS still mispronounces a specific word:
   from your AI Studio key.
 - Ensure **billing** is enabled on that GCP project.
 
-## Caption engine decision (blocks the captions work, not the voice work)
-- **Choose Remotion vs MoviePy.**
-  - Remotion = best animation fidelity, but heavier Docker image (Node +
-    Chromium) and a **licensing check**: it's free for individuals/small
-    companies but needs a paid **Company License** above a size threshold —
-    confirm whether `SIVGOS` qualifies for free use.
-  - MoviePy = pure-Python, lighter, MIT-licensed, slightly lower fidelity.
+## Caption engine — DECIDED (no action needed)
+- **MoviePy** chosen (pure-Python, MIT, no licensing cost, lighter image) to
+  minimize cost. Remotion kept as a documented fallback if MoviePy's fidelity
+  isn't good enough — revisit only then.
+
+## Background music — one small decision
+- Decide **yes/no on background music** for v2 (adds a music pool + ducking).
 
 ## Assets (improves output quality directly)
 - Add a few **high-resolution 1080×1920 .mp4** clips to your

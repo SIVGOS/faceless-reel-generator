@@ -81,14 +81,14 @@ Quality/polish pass. Full detail in `ROADMAP.md`; user prerequisites in
   (`gemini-3.1-flash-tts-preview`) via the existing `google-genai` SDK + existing
   `GEMINI_API_KEY` (no new API/credential). edge-tts stays as free fallback.
   Output is 24 kHz PCM → decode to WAV; add ffmpeg `loudnorm`.
-- **Captions:** replace the ASS `\k` sweep with a real keyframe engine —
-  word-by-word pop/scale/highlight via **Remotion** (recommended) or **MoviePy**
-  (lighter, MIT). New pure `captions.py` emits a timeline JSON; render runs as a
-  subprocess with timeout (same boundary as `compose.py`).
+- **Captions:** replace the ASS `\k` sweep with word-by-word pop/scale/highlight
+  via **MoviePy** (chosen — pure-Python, MIT, no Node/Chromium; picked to
+  minimize cost). A pure `captions.py` emits an engine-agnostic timeline JSON;
+  **Remotion is a documented fallback** if fidelity disappoints (same JSON, swap
+  only the render stage). ASS stays as a light `CAPTION_ENGINE=ass` fallback.
 - **Video:** Ken Burns + gradient overlay + h264 `crf ~18` (vs `veryfast`/23);
   optional `MUSIC_FOLDER_PATH` with sidechain ducking.
 - **Rendering becomes async** (background job + status polling) since v2 renders
   exceed a safe request timeout.
 
-Open decisions before coding: **Remotion vs MoviePy** (fidelity/image-size/
-licensing) and whether to include background music.
+Open decision before coding: whether to include background music in v2.

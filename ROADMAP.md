@@ -14,9 +14,11 @@ This captures the agreed direction so any session can pick it up.
 - **Voice engine:** **Gemini native TTS** (`gemini-3.1-flash-tts-preview`),
   reusing the existing `google-genai` SDK and the existing AI Studio
   `GEMINI_API_KEY`. Keep `edge-tts` as the free fallback provider.
-- **Caption engine:** a real keyframe animation engine (Remotion recommended;
-  MoviePy is the lighter, license-clean, pure-Python alternative). **Final
-  Remotion-vs-MoviePy pick is still open** — see "Open decisions" below.
+- **Caption engine:** **MoviePy** (pure-Python, MIT-licensed, lighter image) —
+  chosen to minimize cost (no Remotion license exposure, no Node/Chromium in the
+  image). **Remotion is the documented fallback** if MoviePy's fidelity proves
+  unsatisfying; the timeline JSON contract (below) is engine-agnostic so swapping
+  later touches only the render stage.
 
 ## Why Gemini TTS
 - Same SDK + same API key already in use — no new account/credential.
@@ -63,16 +65,17 @@ prompt
   `subtitles.py`): group whisper words into 1–3-word on-screen chunks; attach
   active timing + `emphasis` flags (emphasis can come from Gemini keywords).
   Emits the timeline **JSON** contract.
-- **Remotion path:** a `remotion/` Node project with `ReelComposition.tsx`
-  parameterized by `audioSrc`, `backgroundSrc`, `words`, `style`, `emphasisWords`.
-  Captions: per-word **spring scale-in**, active word **highlight (accent color +
-  scale + rounded pill)**, past words dim, heavy bundled font (Montserrat
-  ExtraBold / Anton), lower/upper-third position.
-  `app/services/remotion.py` builds the Node render argv and runs it as a
-  **subprocess with timeout + stderr surfacing** (same safety boundary as
-  `compose.py`); props passed via a JSON file, not argv.
-- **MoviePy path (alternative):** keep everything in Python; animate text clips
-  via per-frame functions; composite over background.
+- **MoviePy path (chosen):** stays pure-Python in the existing pipeline.
+  `app/services/captions_moviepy.py` reads the timeline JSON and builds the
+  animated caption layer — per-word **pop / scale-in** and active-word
+  **highlight (accent color + scale)** via custom easing functions of time `t`,
+  composited over the background. Heavy bundled font (Montserrat ExtraBold /
+  Anton), lower/upper-third position. Renders via ffmpeg under the hood;
+  invoked behind the same render-job boundary (timeout + error surfacing).
+- **Remotion path (documented fallback, not built):** if MoviePy fidelity is
+  unsatisfying, a `remotion/` Node project with `ReelComposition.tsx` (spring
+  physics, rounded highlight pill) consuming the *same* timeline JSON. Adds
+  Node + Chromium and a license check — see Risks. Deferred unless needed.
 - Keep the ASS builder as a fast/lightweight fallback (`CAPTION_ENGINE=ass`).
 
 ### 4. Video polish — fixes #4
@@ -89,26 +92,29 @@ prompt
 | `TTS_GEMINI_MODEL` | default `gemini-3.1-flash-tts-preview` |
 | `TTS_GEMINI_VOICE` | e.g. `Kore`, `Puck`, `Zephyr` |
 | `TTS_STYLE_PROMPT` | director-style narration instruction |
-| `CAPTION_ENGINE` | `remotion` \| `moviepy` \| `ass` |
+| `CAPTION_ENGINE` | default `moviepy`; `ass` (light fallback), `remotion` (future) |
 | `RENDER_TIMEOUT_SECONDS` | cap for the render subprocess |
 | `MUSIC_FOLDER_PATH` | optional background-music pool |
 
 ## Docker impact
-- If Remotion: multi-stage add **Node + headless Chromium** (image +300–500 MB,
-  needs `libnss3`/font deps + `--no-sandbox`).
-- Bundle display fonts regardless of engine.
+- MoviePy: add the Python package + its ffmpeg/PIL needs — modest. No Node,
+  no Chromium.
+- Bundle display fonts (Montserrat ExtraBold / Anton) for captions.
+- (Only if we ever switch to Remotion: +Node +headless Chromium, ~300–500 MB,
+  `libnss3`/font deps + `--no-sandbox`.)
 
 ## Risks
-- Image size + build time jump (Chromium) if Remotion.
 - Per-video render time climbs → async + concurrency limits required.
-- **Remotion licensing**: free for individuals/small companies; paid Company
-  License above a size threshold — verify for the `SIVGOS` org before committing.
+- MoviePy animation is hand-rolled (easing functions) and tops out below
+  Remotion's effortless polish; per-frame Python compositing at 1080×1920 can be
+  slow — watch render time and cap concurrency.
 - Preview TTS model (`*-preview`) IDs/behavior may change; pin and re-verify.
+- (Deferred) If MoviePy fidelity disappoints → Remotion, which carries a Company
+  License check (free only for individuals / for-profits ≤3 people) and a heavier
+  image. Same timeline JSON, so the swap is contained.
 
 ## Open decisions (need user input before coding)
-1. **Remotion vs MoviePy** — fidelity + heavier image (+ licensing) vs
-   pure-Python + lighter + MIT.
-2. Background music: yes/no for v2.
+1. Background music: yes/no for v2.
 
 ## User action items
 See `ACTION_ITEMS.md`.
