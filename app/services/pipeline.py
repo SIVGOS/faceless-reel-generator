@@ -43,5 +43,6 @@ def render_reel(project_id: int, script: str) -> Path:
         ass_path=ass_path,
         output_path=output_path,
         backgrounds_dir=settings.backgrounds_dir,
+        timeout_seconds=settings.render_timeout_seconds,
     )
     return output_path

@@ -32,6 +32,10 @@ def client(tmp_path, monkeypatch):
 
     app.dependency_overrides[get_db] = override_get_db
 
+    # Background render jobs open their OWN session via projects_router.SessionLocal
+    # (the request session is gone by then). Point it at the test DB too.
+    monkeypatch.setattr(projects_router, "SessionLocal", TestingSession)
+
     # Mock Gemini so generate-script never hits the network.
     monkeypatch.setattr(
         projects_router, "generate_script", lambda prompt: f"SCRIPT::{prompt}"
@@ -112,6 +116,31 @@ def test_tenancy_isolation(client):
     assert client.get(f"/api/projects/{pid}/video").status_code == 404
 
 
+def test_compile_schedules_async_render(client, monkeypatch):
+    """Compile returns 202 immediately, then the background job marks it done."""
+    from pathlib import Path
+
+    from app.services import pipeline
+
+    _register(client, "frank@example.com")
+    pid = client.post(
+        "/api/projects/generate-script", json={"prompt": "p"}
+    ).json()["project_id"]
+
+    monkeypatch.setattr(
+        pipeline, "render_reel", lambda project_id, script: Path(f"/x/reel_{project_id}.mp4")
+    )
+
+    r = client.post(f"/api/projects/{pid}/compile")
+    assert r.status_code == 202
+    assert r.json()["status"] == "rendering"  # response reflects the scheduled state
+
+    # TestClient runs background tasks before returning, so the job has finished.
+    proj = client.get("/api/projects").json()[0]
+    assert proj["status"] == "done"
+    assert proj["video_path"].endswith(f"reel_{pid}.mp4")
+
+
 def test_compile_failure_records_error_no_leak(client, monkeypatch):
     """A failing render must mark the project failed, not hang or leak state."""
     from app.services import pipeline
@@ -127,11 +156,27 @@ def test_compile_failure_records_error_no_leak(client, monkeypatch):
 
     monkeypatch.setattr(pipeline, "render_reel", boom)
 
+    # The render is async now: compile is accepted (202), the failure is recorded
+    # on the project by the background job (no 500, no stuck 'rendering').
     r = client.post(f"/api/projects/{pid}/compile")
-    assert r.status_code == 500
+    assert r.status_code == 202
     proj = client.get("/api/projects").json()[0]
     assert proj["status"] == "failed"
     assert "no backgrounds" in proj["error"]
+
+
+def test_double_compile_rejected(client, monkeypatch):
+    """A project already rendering cannot be re-compiled (409)."""
+    _register(client, "grace@example.com")
+    pid = client.post(
+        "/api/projects/generate-script", json={"prompt": "p"}
+    ).json()["project_id"]
+
+    # No-op the background job so the project stays in 'rendering' between calls.
+    monkeypatch.setattr(projects_router, "_run_render", lambda project_id, script: None)
+
+    assert client.post(f"/api/projects/{pid}/compile").status_code == 202
+    assert client.post(f"/api/projects/{pid}/compile").status_code == 409
 
 
 def test_compile_without_script_rejected(client):

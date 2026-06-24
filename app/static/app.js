@@ -24,6 +24,8 @@ async function api(path, { method = "GET", body } = {}) {
 
 // ---- state ----
 let currentProjectId = null;
+let pollTimer = null; // gallery auto-refresh while a render is in flight
+let awaitingId = null; // project whose render we're actively reporting on
 
 // ---- auth view ----
 let authMode = "login";
@@ -112,15 +114,16 @@ $("#compile-btn").addEventListener("click", async () => {
   if (!script) { setStatus("Script is empty.", "err"); return; }
   const btn = $("#compile-btn");
   btn.disabled = true;
-  setStatus("Rendering reel (voice → captions → FFmpeg)… this can take a minute.", "busy");
+  setStatus("Starting render…", "busy");
   try {
-    // Persist any manual edits, then compile.
+    // Persist any manual edits, then kick off the async render (202).
     await api(`/api/projects/${currentProjectId}/script`, {
       method: "PUT", body: { generated_script: script },
     });
     await api(`/api/projects/${currentProjectId}/compile`, { method: "POST" });
-    setStatus("Reel compiled. See the gallery.", "ok");
-    loadProjects();
+    awaitingId = currentProjectId;
+    setStatus("Rendering reel (voice → captions → FFmpeg)… this can take a minute.", "busy");
+    loadProjects(); // renders the 'rendering' badge and starts auto-polling
   } catch (err) {
     setStatus(err.message, "err");
     loadProjects();
@@ -183,16 +186,37 @@ function projectCard(p) {
 
 async function loadProjects() {
   const list = $("#gallery-list");
+  let projects;
   try {
-    const projects = await api("/api/projects");
-    list.innerHTML = "";
-    if (!projects.length) {
-      list.innerHTML = '<p class="muted empty">No projects yet. Generate a script to begin.</p>';
-      return;
-    }
-    projects.forEach((p) => list.appendChild(projectCard(p)));
+    projects = await api("/api/projects");
   } catch (err) {
     list.innerHTML = `<p class="error empty">${err.message}</p>`;
+    return;
+  }
+
+  list.innerHTML = "";
+  if (!projects.length) {
+    list.innerHTML = '<p class="muted empty">No projects yet. Generate a script to begin.</p>';
+  } else {
+    projects.forEach((p) => list.appendChild(projectCard(p)));
+  }
+
+  // Report the terminal state of the render we're actively waiting on.
+  if (awaitingId != null) {
+    const p = projects.find((x) => x.id === awaitingId);
+    if (p && p.status === "done") {
+      setStatus("Reel ready — see the gallery.", "ok");
+      awaitingId = null;
+    } else if (p && p.status === "failed") {
+      setStatus(p.error || "Render failed.", "err");
+      awaitingId = null;
+    }
+  }
+
+  // Auto-refresh while any project is still rendering (covers reload-mid-render).
+  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+  if (projects.some((p) => p.status === "rendering")) {
+    pollTimer = setTimeout(loadProjects, 3000);
   }
 }
 
