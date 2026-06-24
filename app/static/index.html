@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reel Forge — Faceless Reel Generator</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">▰▰▱</span>
+      <span class="brand-name">Reel Forge</span>
+    </div>
+    <div id="user-chip" class="user-chip hidden">
+      <span id="user-name"></span>
+      <button id="logout-btn" class="btn btn-ghost">Log out</button>
+    </div>
+  </header>
+
+  <!-- ===== AUTH VIEW ===== -->
+  <main id="auth-view" class="auth-view">
+    <section class="auth-card">
+      <h1>Generate vertical reels from a single prompt.</h1>
+      <p class="muted">Script with Gemini. Narrate, caption, and render — all in one click.</p>
+
+      <div class="tabs">
+        <button class="tab active" data-mode="login">Log in</button>
+        <button class="tab" data-mode="register">Register</button>
+      </div>
+
+      <form id="auth-form" class="stack">
+        <label>Username
+          <input id="auth-username" name="username" autocomplete="username" required minlength="3" />
+        </label>
+        <label>Password
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="6" />
+        </label>
+        <button type="submit" class="btn btn-primary" id="auth-submit">Log in</button>
+      </form>
+      <p id="auth-error" class="error hidden"></p>
+    </section>
+  </main>
+
+  <!-- ===== WORKSPACE VIEW ===== -->
+  <main id="workspace-view" class="workspace hidden">
+    <section class="panel controls">
+      <h2>Workspace</h2>
+
+      <label class="field">Prompt
+        <textarea id="prompt-input" rows="3"
+          placeholder="e.g. Write a stoic philosophy quote about resilience"></textarea>
+      </label>
+      <button id="generate-btn" class="btn btn-primary">Generate Script</button>
+
+      <label class="field">Script <span class="muted">(editable)</span>
+        <textarea id="script-input" rows="8" placeholder="Generated script appears here…"></textarea>
+      </label>
+      <button id="compile-btn" class="btn btn-accent" disabled>Compile Video</button>
+
+      <p id="status-line" class="status hidden"></p>
+    </section>
+
+    <section class="panel gallery">
+      <div class="gallery-head">
+        <h2>Project Gallery</h2>
+        <button id="refresh-btn" class="btn btn-ghost">Refresh</button>
+      </div>
+      <div id="gallery-list" class="gallery-list">
+        <p class="muted empty">No projects yet. Generate a script to begin.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
