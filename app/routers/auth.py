@@ -32,13 +32,13 @@ def _set_session_cookie(response: Response, user_id: int) -> None:
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(payload: UserCreate, response: Response, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.username == payload.username).first()
+    existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Username already taken."
+            status_code=status.HTTP_409_CONFLICT, detail="Email already registered."
         )
     user = User(
-        username=payload.username,
+        email=payload.email,
         hashed_password=hash_password(payload.password),
     )
     db.add(user)
@@ -50,11 +50,11 @@ def register(payload: UserCreate, response: Response, db: Session = Depends(get_
 
 @router.post("/login", response_model=UserOut)
 def login(payload: UserCreate, response: Response, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == payload.username).first()
+    user = db.query(User).filter(User.email == payload.email).first()
     if user is None or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password.",
+            detail="Incorrect email or password.",
         )
     _set_session_cookie(response, user.id)
     return user

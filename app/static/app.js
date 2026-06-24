@@ -43,11 +43,11 @@ document.querySelectorAll(".tab").forEach((tab) =>
 
 $("#auth-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const username = $("#auth-username").value.trim();
+  const email = $("#auth-email").value.trim();
   const password = $("#auth-password").value;
   const path = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
   try {
-    const user = await api(path, { method: "POST", body: { username, password } });
+    const user = await api(path, { method: "POST", body: { email, password } });
     enterWorkspace(user);
   } catch (err) {
     const el = $("#auth-error");
@@ -58,7 +58,7 @@ $("#auth-form").addEventListener("submit", async (e) => {
 
 // ---- workspace ----
 function enterWorkspace(user) {
-  $("#user-name").textContent = user.username;
+  $("#user-name").textContent = user.email;
   show($("#user-chip"));
   hide($("#auth-view"));
   show($("#workspace-view"));
