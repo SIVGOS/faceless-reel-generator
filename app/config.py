@@ -26,7 +26,11 @@ class Settings(BaseSettings):
     # Media
     tts_voice: str = "en-US-ChristopherNeural"
     whisper_model: str = "base"
-    gemini_model: str = "gemini-2.5-flash"
+
+    # Gemini models (env-driven). Generation model is used for script writing;
+    # embedding model is wired through config for future semantic features.
+    gemini_generation_model: str = "gemini-2.5-flash"
+    gemini_embedding_model: str = "gemini-embedding-001"
 
     # Paths
     data_dir: Path = BASE_DIR / "data"

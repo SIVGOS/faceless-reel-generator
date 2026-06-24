@@ -36,7 +36,7 @@ def generate_script(prompt: str) -> str:
     try:
         client = genai.Client(api_key=settings.gemini_api_key)
         response = client.models.generate_content(
-            model=settings.gemini_model,
+            model=settings.gemini_generation_model,
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,

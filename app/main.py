@@ -29,7 +29,12 @@ app.include_router(projects.router)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "voice": settings.tts_voice, "model": settings.gemini_model}
+    return {
+        "status": "ok",
+        "voice": settings.tts_voice,
+        "model": settings.gemini_generation_model,
+        "embedding_model": settings.gemini_embedding_model,
+    }
 
 
 @app.get("/")

@@ -10,6 +10,8 @@ services:
     environment:
       # Pulled from a local .env (see .env.example). Compose substitutes these.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_GENERATION_MODEL: ${GEMINI_GENERATION_MODEL:-gemini-2.5-flash}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
       JWT_SECRET: ${JWT_SECRET:-insecure-dev-secret-change-me}
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-10080}
       TTS_VOICE: ${TTS_VOICE:-en-US-ChristopherNeural}
