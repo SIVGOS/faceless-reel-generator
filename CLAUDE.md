@@ -73,3 +73,22 @@ tests/               offline sanity tests (subtitles, ffmpeg arg builder)
 ## Git
 Work proceeds in checkpoints: scaffold → schema → pipeline → auth → frontend →
 docker. Commit at each green checkpoint.
+
+## Roadmap — v2 (planned, not yet built)
+Quality/polish pass. Full detail in `ROADMAP.md`; user prerequisites in
+`ACTION_ITEMS.md`. Locked decisions:
+- **Voice:** swap mechanical edge-tts for **Gemini native TTS**
+  (`gemini-3.1-flash-tts-preview`) via the existing `google-genai` SDK + existing
+  `GEMINI_API_KEY` (no new API/credential). edge-tts stays as free fallback.
+  Output is 24 kHz PCM → decode to WAV; add ffmpeg `loudnorm`.
+- **Captions:** replace the ASS `\k` sweep with a real keyframe engine —
+  word-by-word pop/scale/highlight via **Remotion** (recommended) or **MoviePy**
+  (lighter, MIT). New pure `captions.py` emits a timeline JSON; render runs as a
+  subprocess with timeout (same boundary as `compose.py`).
+- **Video:** Ken Burns + gradient overlay + h264 `crf ~18` (vs `veryfast`/23);
+  optional `MUSIC_FOLDER_PATH` with sidechain ducking.
+- **Rendering becomes async** (background job + status polling) since v2 renders
+  exceed a safe request timeout.
+
+Open decisions before coding: **Remotion vs MoviePy** (fidelity/image-size/
+licensing) and whether to include background music.
