@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Env / secrets
+.env
+
+# Runtime data: sqlite db + generated media
+data/
+!data/.gitkeep
+
+# Background source pool is mounted, not committed (keep folder only)
+backgrounds/*
+!backgrounds/.gitkeep
+
+# Whisper model cache
+.cache/
+*.bin
+
+# OS
+.DS_Store

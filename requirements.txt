@@ -1,0 +1,28 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# DB
+SQLAlchemy==2.0.36
+
+# Auth
+# passlib 1.7.4 reads bcrypt.__about__, removed in bcrypt 4.1+. Pin to 4.0.x.
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+PyJWT==2.10.1
+
+# Config
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# AI text
+google-genai==0.3.0
+
+# Media pipeline
+edge-tts==7.0.0
+faster-whisper==1.1.0
+
+# Tests
+pytest==8.3.4
+httpx==0.28.1
