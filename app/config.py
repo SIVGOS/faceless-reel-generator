@@ -37,6 +37,9 @@ class Settings(BaseSettings):
         "Read as a warm, confident, upbeat narrator for a short vertical video. "
         "Natural pacing, clear articulation, light energy — not robotic."
     )
+    # If the Gemini TTS path fails (quota, region, transient), auto-fall back to
+    # the free edge-tts provider so a render still completes.
+    tts_fallback_to_edge: bool = True
 
     # Caption engine (v2): `moviepy` (animated, default), `ass` (light fallback),
     # `remotion` (documented future fallback, not built).

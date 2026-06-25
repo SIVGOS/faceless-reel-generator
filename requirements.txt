@@ -16,8 +16,9 @@ PyJWT==2.10.1
 pydantic==2.10.4
 pydantic-settings==2.7.1
 
-# AI text
-google-genai==0.3.0
+# AI text + native Gemini TTS. The TTS speech-generation API (response_modalities
+# AUDIO + SpeechConfig) needs the 2.x SDK; 0.3.0 predates it.
+google-genai==2.5.0
 
 # Media pipeline
 # edge-tts must track Microsoft's rotating Sec-MS-GEC token; older pins 403.
