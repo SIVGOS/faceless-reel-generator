@@ -28,8 +28,9 @@ def render_reel(project_id: int, script: str) -> Path:
     ass_path = work / "captions.ass"
     output_path = work / "reel.mp4"
 
-    # 1. Narration
-    tts.synthesize(script, audio_path)
+    # 1. Narration. The provider chooses the container (gemini → loudnorm'd .wav,
+    # edge → .mp3), so use the returned path for the downstream stages.
+    audio_path = tts.synthesize(script, audio_path)
 
     # 2. Word-level alignment
     words = transcribe.transcribe_words(audio_path)
@@ -43,5 +44,6 @@ def render_reel(project_id: int, script: str) -> Path:
         ass_path=ass_path,
         output_path=output_path,
         backgrounds_dir=settings.backgrounds_dir,
+        timeout_seconds=settings.render_timeout_seconds,
     )
     return output_path

@@ -95,6 +95,7 @@ def compose_video(
     output_path: str | Path,
     backgrounds_dir: str | Path,
     background_path: str | Path | None = None,
+    timeout_seconds: int = FFMPEG_TIMEOUT_SECONDS,
 ) -> Path:
     """Run the full composition and return the output path."""
     bg = Path(background_path) if background_path else pick_background(backgrounds_dir)
@@ -112,11 +113,11 @@ def compose_video(
             cmd,
             capture_output=True,
             text=True,
-            timeout=FFMPEG_TIMEOUT_SECONDS,
+            timeout=timeout_seconds,
             check=False,
         )
     except subprocess.TimeoutExpired as exc:  # pragma: no cover - timing dependent
-        raise CompositionError(f"ffmpeg timed out after {FFMPEG_TIMEOUT_SECONDS}s") from exc
+        raise CompositionError(f"ffmpeg timed out after {timeout_seconds}s") from exc
 
     if proc.returncode != 0:
         tail = (proc.stderr or "")[-2000:]
