@@ -24,6 +24,9 @@ google-genai==2.5.0
 # edge-tts must track Microsoft's rotating Sec-MS-GEC token; older pins 403.
 edge-tts==7.2.8
 faster-whisper==1.1.0
+# Animated captions (v2 caption engine). 2.x API: with_*/resized/cropped, PIL
+# TextClip (no ImageMagick). Pulls pillow + imageio-ffmpeg.
+moviepy==2.1.2
 
 # Tests
 pytest==8.3.4

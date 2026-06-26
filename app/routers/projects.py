@@ -17,6 +17,7 @@ from ..schemas import (
     ScriptUpdate,
 )
 from ..services import pipeline
+from ..services.captions import CaptionError
 from ..services.compose import CompositionError
 from ..services.gemini import ScriptGenerationError, generate_script
 from ..services.transcribe import TranscriptionError
@@ -122,7 +123,7 @@ def _run_render(project_id: int, script: str) -> None:
     """
     try:
         output = pipeline.render_reel(project_id, script)
-    except (TTSError, TranscriptionError, CompositionError) as exc:
+    except (TTSError, TranscriptionError, CompositionError, CaptionError) as exc:
         _finalize_render(project_id, status_value="failed", error=str(exc))
         return
     except Exception as exc:  # noqa: BLE001 - defensive catch-all for a detached job

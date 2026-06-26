@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     # Caption engine (v2): `moviepy` (animated, default), `ass` (light fallback),
     # `remotion` (documented future fallback, not built).
     caption_engine: str = "moviepy"
+    # Display font for animated (moviepy) captions. Bundled OFL font lives under
+    # app/assets/fonts and ships in the image (copied with the app package).
+    caption_font_path: Path = BASE_DIR / "app" / "assets" / "fonts" / "Anton-Regular.ttf"
+    # Frame rate for the moviepy render. 30 balances smoothness vs CPU cost.
+    caption_fps: int = 30
 
     # Hard cap (seconds) for a single render job's subprocess work.
     render_timeout_seconds: int = 900
