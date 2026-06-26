@@ -61,6 +61,19 @@ tests/               offline sanity tests (subtitles, ffmpeg arg builder)
 - Tests / sanity checks: `python -m pytest tests/ -q`
 - Syntax check everything: `python -m compileall app`
 
+## Local dev environment — Apple Silicon Docker (IMPORTANT)
+Before ANY local Docker work (`docker build`, `docker compose`, render benchmark),
+run **`./scripts/dev-docker.sh`** first. On this Apple-Silicon machine the default
+Colima profile is EMULATED x86_64, which makes the MoviePy render unusably slow
+(a 53s reel never finished in 30+ min); the native arm64 profile renders it in
+~150s. The script stops any running emulated-x86 Colima profile and brings up (or
+reuses) the native arm64 profile (`arm`, 4 cpu / 8 GiB), then switches the docker
+context to `colima-arm`. It is idempotent and does NOT delete the x86 `default`
+profile (it holds other projects' containers). No-op / errors out cleanly on
+native-Linux hosts (incl. the deploy server) — there, use docker directly.
+NOTE: native arm64 is an OPTIMISTIC perf proxy; the budget x86 deploy box (4 vCPU)
+will be slower — confirm production render timing on the real server.
+
 ## Env (.env, see .env.example)
 - `GEMINI_API_KEY` — Google AI Studio key.
 - `GEMINI_GENERATION_MODEL` / `GEMINI_EMBEDDING_MODEL` — Gemini model ids.
