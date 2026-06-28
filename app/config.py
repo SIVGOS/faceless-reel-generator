@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     # Media
     tts_voice: str = "en-US-ChristopherNeural"
     whisper_model: str = "base"
+    # Larger model auto-selected when the script contains Devanagari (Hindi /
+    # Sanskrit). `base` aligns Devanagari poorly — a spoken Sanskrit verse yielded
+    # zero words — so English reels keep `whisper_model` and Devanagari reels use
+    # this one (heavier first-load + RAM, much better Devanagari word timings).
+    whisper_model_devanagari: str = "small"
 
     # Voice engine (v2). `gemini` = native Gemini TTS (quality), `edge` = the free
     # edge-tts fallback. The Gemini path reuses GEMINI_API_KEY + google-genai SDK.
@@ -41,12 +46,34 @@ class Settings(BaseSettings):
     # the free edge-tts provider so a render still completes.
     tts_fallback_to_edge: bool = True
 
+    # Used when the script contains Devanagari (Hindi / Sanskrit). The Gemini voice
+    # timbre (tts_gemini_voice) is unchanged — accent comes from the text language
+    # + this director prompt: authentic Devanagari pronunciation, neutral Indian
+    # English on the rest, so the whole narration is one Indian narrator.
+    tts_style_prompt_indian: str = (
+        "You are narrating a short vertical video that mixes English with Hindi or "
+        "Sanskrit written in Devanagari. Pronounce every Devanagari (Hindi / "
+        "Sanskrit) word authentically and correctly — proper vowel length, "
+        "anusvara, and conjunct consonants. Speak the English portions in a clear, "
+        "neutral Indian English accent so the whole narration sounds like a single "
+        "Indian narrator. Natural pacing, light energy — not robotic."
+    )
+    # edge-tts fallback voice for Devanagari content — an Indian voice that reads
+    # both Devanagari and Latin (plain en-US mangles Hindi/Sanskrit).
+    tts_voice_indian: str = "hi-IN-MadhurNeural"
+
     # Caption engine (v2): `moviepy` (animated, default), `ass` (light fallback),
     # `remotion` (documented future fallback, not built).
     caption_engine: str = "moviepy"
     # Display font for animated (moviepy) captions. Bundled OFL font lives under
     # app/assets/fonts and ships in the image (copied with the app package).
     caption_font_path: Path = BASE_DIR / "app" / "assets" / "fonts" / "Anton-Regular.ttf"
+    # Devanagari caption font — applied PER WORD to Devanagari (Hindi / Sanskrit)
+    # tokens while Latin words keep the Anton display font. Anton has no Devanagari
+    # glyphs (would render tofu). Bundled OFL Noto, ships via `COPY app`.
+    caption_font_devanagari_path: Path = (
+        BASE_DIR / "app" / "assets" / "fonts" / "NotoSansDevanagari-Bold.ttf"
+    )
     # Frame rate for the moviepy render. 30 balances smoothness vs CPU cost.
     caption_fps: int = 30
 

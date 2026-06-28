@@ -6,6 +6,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from .services.language import normalize_language
+
 # Pragmatic email shape check (no external validator dep — real verification is
 # the planned OTP flow). Stored lowercased.
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -40,6 +42,13 @@ class ProjectCreate(BaseModel):
 
 class ScriptGenerateRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=2000)
+    # auto | english | hindi | sanskrit (unknown values coerced to "auto").
+    language: str = "auto"
+
+    @field_validator("language")
+    @classmethod
+    def _normalize_language(cls, v: str) -> str:
+        return normalize_language(v)
 
 
 class ScriptUpdate(BaseModel):
@@ -54,6 +63,7 @@ class ProjectOut(BaseModel):
     video_path: str | None
     background: str | None
     music: str | None
+    language: str
     status: str
     error: str | None
     timestamp: datetime

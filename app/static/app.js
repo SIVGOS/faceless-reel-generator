@@ -89,12 +89,13 @@ function setStatus(text, kind) {
 $("#generate-btn").addEventListener("click", async () => {
   const prompt = $("#prompt-input").value.trim();
   if (!prompt) { setStatus("Enter a prompt first.", "err"); return; }
+  const language = $("#language-select").value;
   const btn = $("#generate-btn");
   btn.disabled = true;
   setStatus("Generating script with Gemini…", "busy");
   try {
     const data = await api("/api/projects/generate-script", {
-      method: "POST", body: { prompt },
+      method: "POST", body: { prompt, language },
     });
     currentProjectId = data.project_id;
     $("#script-input").value = data.generated_script;

@@ -15,7 +15,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..config import settings
-from . import captions, captions_moviepy, compose, subtitles, transcribe, tts
+from . import align, captions, captions_moviepy, compose, subtitles, transcribe, tts
+from .language import DEVANAGARI_WHISPER_LANGUAGE, contains_devanagari
 
 
 def project_dir(project_id: int) -> Path:
@@ -38,8 +39,19 @@ def render_reel(project_id: int, script: str) -> Path:
     # edge → .mp3), so use the returned path for the downstream stages.
     audio_path = tts.synthesize(script, audio_path)
 
-    # 2. Word-level alignment
-    words = transcribe.transcribe_words(audio_path)
+    # 2. Word-level alignment. Devanagari (Hindi/Sanskrit) content gets a Hindi
+    # language hint + the larger whisper model so the spoken verse actually aligns
+    # (base with no hint produced zero words for Sanskrit). Detected from the
+    # script so an English reel with an embedded shloka is covered too.
+    whisper_language = (
+        DEVANAGARI_WHISPER_LANGUAGE if contains_devanagari(script) else None
+    )
+    timed_words = transcribe.transcribe_words(audio_path, language=whisper_language)
+
+    # 2b. Captions must show the EXACT script (whisper mis-spells, esp. Devanagari).
+    # Keep whisper's timing but remap it onto the known-correct script text; fall
+    # back to the raw whisper words if alignment yields nothing.
+    words = align.align_script_to_timings(script, timed_words) or timed_words
 
     # 3 + 4. Captions + composition, branched by engine.
     engine = (settings.caption_engine or "moviepy").strip().lower()

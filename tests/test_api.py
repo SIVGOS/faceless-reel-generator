@@ -38,7 +38,9 @@ def client(tmp_path, monkeypatch):
 
     # Mock Gemini so generate-script never hits the network.
     monkeypatch.setattr(
-        projects_router, "generate_script", lambda prompt: f"SCRIPT::{prompt}"
+        projects_router,
+        "generate_script",
+        lambda prompt, language="auto": f"SCRIPT::{prompt}",
     )
 
     with TestClient(app) as c:

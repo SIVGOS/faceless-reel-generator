@@ -43,6 +43,9 @@ class Project(Base):
     # background null = random pick; music null = no music. (checkpoint F)
     background: Mapped[str | None] = mapped_column(String(512), nullable=True)
     music: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Script generation language: auto | english | hindi | sanskrit. hindi/sanskrit
+    # are written in Devanagari, which drives Indian TTS + Devanagari captions.
+    language: Mapped[str] = mapped_column(String(16), default="auto", nullable=False)
     # pending | scripted | rendering | done | failed
     status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)

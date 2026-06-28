@@ -112,7 +112,24 @@ def test_centered_position_recenters_with_scale():
 
 
 # --------------------------------------------------------------------------- #
+# Per-word font selection (pure)
+# --------------------------------------------------------------------------- #
+def test_font_for_word_picks_devanagari_for_devanagari_tokens():
+    assert cmp.font_for_word("विद्या", "anton.ttf", "noto.ttf") == "noto.ttf"
+    assert cmp.font_for_word("knowledge", "anton.ttf", "noto.ttf") == "anton.ttf"
+    # Mixed reel: each word resolves independently.
+    assert cmp.font_for_word("fire.", "anton.ttf", "noto.ttf") == "anton.ttf"
+    assert cmp.font_for_word("अग्नि", "anton.ttf", "noto.ttf") == "noto.ttf"
+
+
+# --------------------------------------------------------------------------- #
 # Config wiring
 # --------------------------------------------------------------------------- #
 def test_bundled_font_exists():
     assert settings.caption_font_path.exists(), "Anton font must ship with the app"
+
+
+def test_bundled_devanagari_font_exists():
+    assert settings.caption_font_devanagari_path.exists(), (
+        "Noto Sans Devanagari must ship with the app for Hindi/Sanskrit captions"
+    )

@@ -22,6 +22,7 @@ import wave
 from pathlib import Path
 
 from ..config import settings
+from .language import contains_devanagari
 
 
 class TTSError(RuntimeError):
@@ -99,7 +100,14 @@ def _request_gemini_pcm(text: str, voice: str | None) -> bytes:
         raise TTSError("google-genai is not installed. `pip install google-genai`.") from exc
 
     voice = voice or settings.tts_gemini_voice
-    style = (settings.tts_style_prompt or "").strip()
+    # Devanagari (Hindi/Sanskrit) → the Indian-accent director prompt so the verse
+    # is pronounced correctly and any English is read in a neutral Indian accent.
+    style_prompt = (
+        settings.tts_style_prompt_indian
+        if contains_devanagari(text)
+        else settings.tts_style_prompt
+    )
+    style = (style_prompt or "").strip()
     contents = f"{style}\n\n{text}" if style else text
 
     try:
@@ -200,7 +208,14 @@ def _synthesize_edge(text: str, out_path: str | Path, voice: str | None = None) 
     """
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    voice = voice or settings.tts_voice
+    # No explicit voice → pick by script: an Indian voice reads Devanagari (and the
+    # English around it) far better than the default en-US voice.
+    if voice is None:
+        voice = (
+            settings.tts_voice_indian
+            if contains_devanagari(text)
+            else settings.tts_voice
+        )
 
     try:
         import edge_tts

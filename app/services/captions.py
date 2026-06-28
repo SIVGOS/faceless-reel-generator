@@ -39,8 +39,9 @@ FRAME_HEIGHT = 1920
 MAX_WORDS_PER_CHUNK = 3
 
 # A word ending in one of these closes its chunk early, so phrases break on
-# natural sentence/clause boundaries rather than mid-thought.
-_CHUNK_BREAK_CHARS = ".!?"
+# natural sentence/clause boundaries rather than mid-thought. Includes the
+# Devanagari danda (।) and double danda (॥) used to end Hindi/Sanskrit sentences.
+_CHUNK_BREAK_CHARS = ".!?।॥"
 
 TIMELINE_VERSION = 1
 

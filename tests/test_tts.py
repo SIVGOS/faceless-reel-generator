@@ -134,3 +134,53 @@ def test_extract_pcm_finds_inline_data():
 def test_extract_pcm_empty_when_no_parts():
     assert tts._extract_pcm(_Resp([])) == b""
     assert tts._extract_pcm(object()) == b""
+
+
+# --------------------------------------------------------------------------- #
+# Indian-accent selection on Devanagari content
+# --------------------------------------------------------------------------- #
+def _fake_edge_tts(monkeypatch, captured):
+    """Inject a fake edge_tts module that records the voice it is given."""
+    import sys
+    import types as pytypes
+
+    fake = pytypes.ModuleType("edge_tts")
+
+    class Communicate:
+        def __init__(self, text, voice):
+            captured["voice"] = voice
+
+        async def save(self, path):
+            from pathlib import Path
+
+            Path(path).write_bytes(b"\x00\x01")  # non-empty so the guard passes
+
+    fake.Communicate = Communicate
+    monkeypatch.setitem(sys.modules, "edge_tts", fake)
+
+
+def test_edge_uses_indian_voice_for_devanagari(monkeypatch, tmp_path):
+    monkeypatch.setattr(settings, "tts_voice", "en-US-ChristopherNeural")
+    monkeypatch.setattr(settings, "tts_voice_indian", "hi-IN-MadhurNeural")
+    captured = {}
+    _fake_edge_tts(monkeypatch, captured)
+
+    tts._synthesize_edge("अलसस्य कुतो विद्या", tmp_path / "n.mp3", None)
+    assert captured["voice"] == "hi-IN-MadhurNeural"
+
+
+def test_edge_uses_default_voice_for_english(monkeypatch, tmp_path):
+    monkeypatch.setattr(settings, "tts_voice", "en-US-ChristopherNeural")
+    monkeypatch.setattr(settings, "tts_voice_indian", "hi-IN-MadhurNeural")
+    captured = {}
+    _fake_edge_tts(monkeypatch, captured)
+
+    tts._synthesize_edge("Stay focused.", tmp_path / "n.mp3", None)
+    assert captured["voice"] == "en-US-ChristopherNeural"
+
+
+def test_edge_explicit_voice_overrides_detection(monkeypatch, tmp_path):
+    captured = {}
+    _fake_edge_tts(monkeypatch, captured)
+    tts._synthesize_edge("अलसस्य", tmp_path / "n.mp3", "custom-voice")
+    assert captured["voice"] == "custom-voice"

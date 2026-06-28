@@ -22,6 +22,7 @@ from pathlib import Path
 
 from ..config import settings
 from .captions import CaptionError
+from .language import is_devanagari_word
 
 # --- Layout / style (authored against the 1080x1920 timeline frame) --------- #
 DEFAULT_FONT_SIZE = 92
@@ -64,6 +65,15 @@ def pop_scale(t: float, duration: float = POP_DURATION) -> float:
     return max(POP_MIN_SCALE, ease_out_back(t / duration))
 
 
+def font_for_word(text: str, latin_font: str, devanagari_font: str) -> str:
+    """Pick the font for one caption token by its script.
+
+    Devanagari (Hindi / Sanskrit) words need a Devanagari-capable font; the Latin
+    display font (Anton) would render them as tofu. Latin words keep Anton.
+    """
+    return devanagari_font if is_devanagari_word(text) else latin_font
+
+
 # --------------------------------------------------------------------------- #
 # Render
 # --------------------------------------------------------------------------- #
@@ -74,6 +84,7 @@ def render_reel(
     audio_path: str | Path,
     output_path: str | Path,
     font_path: str | Path | None = None,
+    font_path_devanagari: str | Path | None = None,
     font_size: int = DEFAULT_FONT_SIZE,
     fps: int | None = None,
 ) -> Path:
@@ -98,6 +109,9 @@ def render_reel(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     font_path = str(font_path or settings.caption_font_path)
+    font_path_devanagari = str(
+        font_path_devanagari or settings.caption_font_devanagari_path
+    )
     fps = fps or settings.caption_fps
 
     frame = timeline.get("frame") or {}
@@ -120,7 +134,7 @@ def render_reel(
 
         def make_text(text: str, color: str):
             return TextClip(
-                font=font_path,
+                font=font_for_word(text, font_path, font_path_devanagari),
                 text=text,
                 font_size=font_size,
                 color=color,

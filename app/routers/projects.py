@@ -60,7 +60,7 @@ def generate_script_endpoint(
 ):
     """Create (or back) a project and fill in the Gemini-generated script."""
     try:
-        script = generate_script(payload.prompt)
+        script = generate_script(payload.prompt, payload.language)
     except ScriptGenerationError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
@@ -70,6 +70,7 @@ def generate_script_endpoint(
         user_id=current_user.id,
         prompt=payload.prompt,
         generated_script=script,
+        language=payload.language,
         status="scripted",
     )
     db.add(project)

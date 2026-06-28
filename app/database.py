@@ -23,6 +23,7 @@ _ADDITIVE_COLUMNS: list[tuple[str, str, str]] = [
     ("users", "is_admin", "BOOLEAN NOT NULL DEFAULT 0"),
     ("projects", "background", "VARCHAR(512)"),
     ("projects", "music", "VARCHAR(512)"),
+    ("projects", "language", "VARCHAR(16) NOT NULL DEFAULT 'auto'"),
 ]
 
 

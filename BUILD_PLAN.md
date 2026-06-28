@@ -15,6 +15,38 @@ unit-tested (the `subtitles.py` discipline); heavy deps stay lazily imported.
 
 ---
 
+## Progress (as of 2026-06-29)
+**Done & on `main`:** Checkpoints 0, A, B, C, D. Plus an **inserted feature** (not
+in the original 0→J sequence): **Hindi & Sanskrit (Devanagari) support** — see
+below. **Remaining:** E (video polish), F (music + asset selection), G (release
+gate — hard pre-deploy blocker), H (responsive UI), I (docker; incl. the known
+compose env-var pass-through gap + music mount), J (backup/restore).
+
+## Checkpoint L10n — Hindi & Sanskrit (Devanagari)  *(inserted, DONE 2026-06-29)*
+Added after a user-reported gap: non-Latin spoken content produced no/garbled
+captions and English-accented TTS. Built across the whole pipeline.
+- `app/services/language.py` (PURE): Devanagari detection + generation-language
+  constants (`auto|english|hindi|sanskrit`) + `normalize_language`.
+- `gemini.py`: per-language system directive (Hindi/Sanskrit MUST be Devanagari,
+  never romanized). `generate_script(prompt, language)`.
+- `tts.py`: on Devanagari, switch to `tts_style_prompt_indian` (authentic
+  pronunciation + neutral Indian English) and edge `tts_voice_indian`.
+- `transcribe.py`: per-model cache; auto-upgrade to `whisper_model_devanagari`
+  (`small`) + `language="hi"` hint for Devanagari (TIMING quality only).
+- `app/services/align.py` (PURE): remap whisper TIMINGS onto the KNOWN script
+  text via monotonic Needleman–Wunsch with consonant-skeleton matching — captions
+  show the exact script, never whisper's mis-spellings. Filters diacritic-only
+  whisper junk to avoid leading time-shift.
+- `captions_moviepy.py`: per-word Latin/Devanagari font (bundled OFL
+  NotoSansDevanagari-Bold; Pillow raqm shapes it). `captions.py`: danda ।॥ breaks.
+- Schema: `projects.language` column (additive migration); UI language picker.
+- Verified live in Docker (Sanskrit shloka): correct spelling, synced timing,
+  Indian-accent TTS, per-word highlight. 68 unit tests green.
+- Optional later: revert `WHISPER_MODEL_DEVANAGARI` to `base` (text now comes from
+  the script, not the model) to save RAM if timing stays acceptable.
+
+---
+
 ## Checkpoint 0 — TTS capability check  *(no code, ~5 min)*
 The only user-side open item. Verify the existing `GEMINI_API_KEY` can call the
 chosen TTS model in this region before building on it.
